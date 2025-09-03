@@ -1,4 +1,5 @@
 using TimeToRESTFromTodo.Models;
+using TimeToRESTFromTodo.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
@@ -11,16 +12,13 @@ var tasks = new List<TaskItem>();
 
 
 
-app.MapGet("/", () =>
-{
-    return Results.Ok("everything is OK");
-});
+app.MapGet("/tasks", () => tasks);
 
-app.MapPost("/tasks", (TaskItem task) =>
+app.MapPost("/tasks", (CreateTaskRequest TaskRequest) =>
 {
-    task.Id = tasks.Count + 1;
-    tasks.Add(task);
-    return Results.Created($"/tasks/{task.Id}", task);
+    TaskItem NewTask = new TaskItem(TaskRequest.Title, TaskRequest.Description);
+    tasks.Add(NewTask);
+    return Results.Created($"/tasks/{NewTask.Id}", NewTask);
 });
 
 
