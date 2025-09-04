@@ -14,7 +14,13 @@ var tasks = new List<TaskItem>();
 
 app.MapGet("/tasks", () => tasks);
 
-app.MapPost("/tasks", (CreateTaskRequest TaskRequest) =>
+app.MapGet("/tasks/{id}", (Guid id) =>
+    tasks.FirstOrDefault(t => t.Id == id) is TaskItem task 
+    ? Results.Ok(task) 
+    : Results.NotFound());
+
+
+app.MapPost("/tasks", (TaskCreateDTO TaskRequest) =>
 {
     TaskItem NewTask = new TaskItem(TaskRequest.Title, TaskRequest.Description);
     tasks.Add(NewTask);
@@ -22,8 +28,26 @@ app.MapPost("/tasks", (CreateTaskRequest TaskRequest) =>
 });
 
 
+app.MapPatch("/task/{id}", (Guid id, TaskPatchDTO PatchDTO) =>
+{
+    TaskItem? task = tasks.FirstOrDefault(t => t.Id == id);
+    if (task is null) Results.NotFound();
+
+    if (PatchDTO.Title is not null)
+        task.Title = PatchDTO.Title;
+
+    if (PatchDTO.Description is not null)
+        task.Description = PatchDTO.Description;
+
+    if (PatchDTO.IsCompleted.HasValue)
+        task.IsCompleted = PatchDTO.IsCompleted.Value;
+
+    return Results.Ok(task);
+});
 
 
+
+app.MapGet("/", () => Results.Redirect("/swagger"));
 app.UseRouting();
 app.UseSwagger();
 app.UseSwaggerUI();
