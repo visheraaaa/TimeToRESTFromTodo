@@ -62,45 +62,6 @@ app.MapDelete("/tasks/{id:guid}", async (Guid id, AppDbContext db, CancellationT
     return Results.Ok();
 });
 
-//app.MapGet("/task/{id}", (Guid id) =>
-//    tasks.FirstOrDefault(t => t.Id == id) is TaskItem task 
-//    ? Results.Ok(task) 
-//    : Results.NotFound());
-
-//app.MapPost("/tasks", (TaskCreateDTO TaskRequest) =>
-//{
-//    TaskItem NewTask = new TaskItem(TaskRequest.Title, TaskRequest.Description);
-//    tasks.Add(NewTask);
-//    return Results.Created($"/tasks/{NewTask.Id}", NewTask);
-//});
-
-//app.MapPatch("/task/{id}", (Guid id, TaskPatchDTO PatchDTO) =>
-//{
-//    TaskItem? task = tasks.FirstOrDefault(t => t.Id == id);
-//    if (task is null) Results.NotFound();
-
-//    if (PatchDTO.Title is not null)
-//        task.Title = PatchDTO.Title;
-
-//    if (PatchDTO.Description is not null)
-//        task.Description = PatchDTO.Description;
-
-//    if (PatchDTO.IsCompleted.HasValue)
-//        task.IsCompleted = PatchDTO.IsCompleted.Value;
-
-//    return Results.Ok(task);
-//});
-
-//app.MapDelete("/task/{id}", (Guid id) =>
-//{
-//    foreach(TaskItem task in tasks)
-//    {
-//        if (task.Id == id) tasks.Remove(task);
-//        return Results.Ok();
-
-//    }
-//    return Results.NotFound();
-//});
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
