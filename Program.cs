@@ -13,10 +13,6 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 
 var app = builder.Build();
 
-//var tasks = new List<TaskItem>();
-
-
-//app.MapGet("/tasks", () => tasks);
 
 app.MapGet("/tasks", async(AppDbContext db, CancellationToken ct) =>
     await db.Tasks.AsNoTracking().ToListAsync());
