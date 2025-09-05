@@ -1,33 +1,43 @@
 using TimeToRESTFromTodo.Models;
 using TimeToRESTFromTodo.Contracts;
+using Microsoft.EntityFrameworkCore;
+using TimeToRESTFromTodo.Data;
+using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
 var app = builder.Build();
 
-var tasks = new List<TaskItem>();
+//var tasks = new List<TaskItem>();
 
 
-app.MapGet("/tasks", () => tasks);
+//app.MapGet("/tasks", () => tasks);
 
-app.MapGet("/task/{id}", (Guid id) =>
-    tasks.FirstOrDefault(t => t.Id == id) is TaskItem task 
-    ? Results.Ok(task) 
-    : Results.NotFound());
+app.MapGet("/tasks", async(AppDbContext db, CancellationToken ct) =>
+    await db.Tasks.AsNoTracking().ToListAsync());
 
-app.MapPost("/tasks", (TaskCreateDTO TaskRequest) =>
+app.MapGet("/tasks/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
 {
-    TaskItem NewTask = new TaskItem(TaskRequest.Title, TaskRequest.Description);
-    tasks.Add(NewTask);
-    return Results.Created($"/tasks/{NewTask.Id}", NewTask);
+    var task = await db.Tasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, ct);
+    return task is null ? Results.NotFound() : Results.Ok(task);
 });
 
-app.MapPatch("/task/{id}", (Guid id, TaskPatchDTO PatchDTO) =>
+app.MapPost("/tasks", async (TaskCreateDTO TaskDTO, AppDbContext db, CancellationToken ct) =>
 {
-    TaskItem? task = tasks.FirstOrDefault(t => t.Id == id);
+    TaskItem task = new TaskItem(TaskDTO.Title, TaskDTO.Description);
+    db.Tasks.Add(task);
+    await db.SaveChangesAsync(ct);
+    return Results.Created($"/tasks/{task.Id}", task);
+});
+
+app.MapPatch("/task/{id}", async(Guid id, TaskPatchDTO PatchDTO, AppDbContext db, CancellationToken ct) =>
+{
+    TaskItem? task = await db.Tasks.FirstOrDefaultAsync(t => t.Id == id, ct);
     if (task is null) Results.NotFound();
 
     if (PatchDTO.Title is not null)
@@ -42,24 +52,65 @@ app.MapPatch("/task/{id}", (Guid id, TaskPatchDTO PatchDTO) =>
     return Results.Ok(task);
 });
 
-app.MapDelete("/task/{id}", (Guid id) =>
+app.MapDelete("/tasks/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
 {
-    foreach(TaskItem task in tasks)
-    {
-        if (task.Id == id) tasks.Remove(task);
-        return Results.Ok();
+    var task = await db.Tasks.FirstOrDefaultAsync(t => t.Id == id, ct);
+    if (task is null) return Results.NotFound();
 
-    }
-    return Results.NotFound();
+    db.Tasks.Remove(task);
+    await db.SaveChangesAsync(ct);
+    return Results.Ok();
 });
+
+//app.MapGet("/task/{id}", (Guid id) =>
+//    tasks.FirstOrDefault(t => t.Id == id) is TaskItem task 
+//    ? Results.Ok(task) 
+//    : Results.NotFound());
+
+//app.MapPost("/tasks", (TaskCreateDTO TaskRequest) =>
+//{
+//    TaskItem NewTask = new TaskItem(TaskRequest.Title, TaskRequest.Description);
+//    tasks.Add(NewTask);
+//    return Results.Created($"/tasks/{NewTask.Id}", NewTask);
+//});
+
+//app.MapPatch("/task/{id}", (Guid id, TaskPatchDTO PatchDTO) =>
+//{
+//    TaskItem? task = tasks.FirstOrDefault(t => t.Id == id);
+//    if (task is null) Results.NotFound();
+
+//    if (PatchDTO.Title is not null)
+//        task.Title = PatchDTO.Title;
+
+//    if (PatchDTO.Description is not null)
+//        task.Description = PatchDTO.Description;
+
+//    if (PatchDTO.IsCompleted.HasValue)
+//        task.IsCompleted = PatchDTO.IsCompleted.Value;
+
+//    return Results.Ok(task);
+//});
+
+//app.MapDelete("/task/{id}", (Guid id) =>
+//{
+//    foreach(TaskItem task in tasks)
+//    {
+//        if (task.Id == id) tasks.Remove(task);
+//        return Results.Ok();
+
+//    }
+//    return Results.NotFound();
+//});
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
-
-
 app.UseRouting();
-app.UseSwagger();
-app.UseSwaggerUI();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 
 app.Run();
