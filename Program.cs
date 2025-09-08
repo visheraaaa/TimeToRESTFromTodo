@@ -31,7 +31,7 @@ app.MapPost("/tasks", async (TaskCreateDTO TaskDTO, AppDbContext db, Cancellatio
     return Results.Created($"/tasks/{task.Id}", task);
 });
 
-app.MapPatch("/task/{id}", async(Guid id, TaskPatchDTO PatchDTO, AppDbContext db, CancellationToken ct) =>
+app.MapPatch("/tasks/{id}", async(Guid id, TaskPatchDTO PatchDTO, AppDbContext db, CancellationToken ct) =>
 {
     TaskItem? task = await db.Tasks.FirstOrDefaultAsync(t => t.Id == id, ct);
     if (task is null) Results.NotFound();
